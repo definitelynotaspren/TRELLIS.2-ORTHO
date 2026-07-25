@@ -43,6 +43,15 @@ landing clean. `app.py` is the one file expected to diverge materially.
 See `DEVELOPMENTPLAN.md` §4 for the full roadmap and §7 for open decisions that need a call before
 Phase 2+ (third- vs first-angle default, anchor-conflict policy, invention-ledger storage location, etc).
 
+## Deployment target
+
+Decided 2026-07-25: **develop in PyTorch, deploy quantized via GGUF on
+[trellis.cpp](https://github.com/pwilkin/trellis.cpp)** (C++/GGML runtime; 1024 cascade on 16 GB,
+~6 GB with quantized weights, CUDA/ROCm/Vulkan). Rationale, constraints, and the caveats — single-image
+only today, inference-only (no Phase 5 fine-tuning on it), hostile input preprocessing to bypass — are
+recorded in `DEVELOPMENTPLAN.md` §6.7. The 24 GB / Linux requirement applies to *developing* this fork,
+not to eventually running it.
+
 ## New packages (no upstream conflict)
 
 ```

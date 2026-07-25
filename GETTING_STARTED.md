@@ -24,7 +24,7 @@ scan or photograph the drawings, and this software:
 | | What you need |
 |---|---|
 | **Drawing checker** (steps 1–3 above) | Any ordinary computer — Windows, Mac, or Linux. This guide. |
-| **3D model generation** (step 4) | A Linux computer with a large NVIDIA graphics card (24 GB+ of video memory). Most people don't have this — see the last section. |
+| **3D model generation** (step 4) | Officially: a Linux computer with a large NVIDIA graphics card (24 GB+ of video memory). But there's a promising lighter path that runs on ordinary gaming GPUs (6–16 GB, AMD included) — see the last section. |
 
 The drawing checker is genuinely useful on its own: it's a drafting-consistency checker for
 hand drawings, and everything it tells you is measured, not guessed.
@@ -195,7 +195,11 @@ consistent.
 
 ## About full 3D generation
 
-Generating the actual 3D model uses a 4-billion-parameter AI model and requires:
+Generating the actual 3D model uses a 4-billion-parameter AI model. There are two ways to run it:
+
+### The official way (heavy hardware)
+
+The original pipeline in this repository requires:
 
 - **Linux** (not Windows or Mac),
 - an **NVIDIA graphics card with at least 24 GB of video memory** (e.g. RTX 3090/4090, A100),
@@ -204,11 +208,32 @@ Generating the actual 3D model uses a 4-billion-parameter AI model and requires:
 If you have that hardware, the installation is scripted — see the *Installation* section of
 [README.md](README.md) and run `. ./setup.sh --new-env --basic ...` as described there.
 
-**One honest caveat:** as of this writing, the drawing checker and the 3D generator are not yet
-connected — the piece that feeds your checked, correctly-scaled drawings into the generator is
-the next item on the roadmap (see [PHASE0_REVIEW.md](PHASE0_REVIEW.md)). Today the generator
-accepts a single photo/image the same way the original Microsoft project does, and the checker
-is a standalone tool. This guide will be updated when they're wired together.
+### The lighter way (ordinary gaming PCs) — the planned deployment path
+
+A community project called [trellis.cpp](https://github.com/pwilkin/trellis.cpp) rebuilt the
+generator so it runs with compressed ("GGUF") model weights — the same trick that lets big chat
+models run on laptops. It generates on graphics cards with as little as **6–16 GB** of memory,
+works on **AMD cards and Windows** too, and its output has been verified to closely match the
+original. Compressed weights are available at
+[Aero-Ex/Trellis2-GGUF](https://huggingface.co/Aero-Ex/Trellis2-GGUF).
+
+**This is the direction this fork intends to ship in:** the heavy PyTorch pipeline is for
+*developing* the model, and the compressed trellis.cpp path is for *running* it. It works with
+our design because everything that makes the output accurate to your drawings — the measuring,
+the scaling, the checking you did above — happens *outside* the AI model, so it applies the same
+way no matter which engine generated the shape.
+
+Two honest caveats:
+
+1. **The pieces aren't wired together yet.** Today, both generators (official and trellis.cpp)
+   accept a single photo/image, and the drawing checker is a standalone tool. Connecting them —
+   so your checked, correctly-scaled drawings feed the generator directly — is the next item on
+   the roadmap (see [PHASE0_REVIEW.md](PHASE0_REVIEW.md)).
+2. **trellis.cpp today only accepts one image**, so the multi-view drawing features this fork is
+   building will reach it later, after the main development is done (details in
+   `DEVELOPMENTPLAN.md` §6.7).
+
+This guide will be updated as those pieces land.
 
 ---
 

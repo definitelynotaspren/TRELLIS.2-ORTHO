@@ -480,6 +480,12 @@ Hull violation is the strongest single signal in the set: it's the only metric t
 
 **6.6 Compute.** Inference needs ≥24 GB VRAM, Linux only. DINOv3-L/16 at 1024px is 4096 tokens **per view**; six views ≈ 25k cross-attention KV tokens against up to 49k sparse query tokens. Upstream's ~17s at 1024³ will grow substantially. Mitigation: run stage 1 and the LR cascade at 512px conditioning (1024 tokens/view), reserve full-res tokens for the HR shape stage. Fine-tuning 4B at these token counts realistically wants 8×80 GB.
 
+**6.7 Deployment path: GGUF via trellis.cpp — develop in PyTorch, ship quantized.** [`pwilkin/trellis.cpp`](https://github.com/pwilkin/trellis.cpp) is a from-scratch C++/GGML reimplementation of TRELLIS.2 inference, numerically validated against torch (DiT rel. err ~2.8e-3), running the 1024 cascade on 16 GB and reportedly ~6 GB with quantized weights ([Aero-Ex/Trellis2-GGUF](https://huggingface.co/Aero-Ex/Trellis2-GGUF), [ilintar/trellis2-gguf](https://huggingface.co/ilintar/trellis2-gguf)), with CUDA/ROCm/Vulkan backends (AMD and integrated GPUs work; Windows too). **This is the intended deployment target, not the development brain:**
+
+- *It cannot be the development brain.* It is single-image only (every §3.2 conditioning change would need a hand-port to GGML), GGUF/GGML is inference-only so Phase 5 LoRA fine-tuning is impossible on it, and its auto-matte/crop input path is exactly the per-view normalisation §1.4 forbids.
+- *It slots cleanly under our thesis.* Scale is a deterministic multiplication on the exported mesh and Phase 3 refinement corrects form against the drawings — neither cares which brain generated the mesh. So trellis.cpp works today as a low-VRAM baseline generation backend (generate GLB there → apply `unit_cube_scale` → validate/refine here), and quantization noise lands precisely where the design has a correction mechanism. Whether Q4/Q8 hurts dimensional accuracy is a Phase 0 harness measurement, not a guess.
+- *Long-term shape:* fine-tune multi-view in PyTorch (rented GPU time), convert the checkpoint to GGUF (trellis.cpp documents custom-checkpoint conversion), and port the slot-embedding conditioning to trellis.cpp as a bounded, contribute-upstream-sized change. Note the six-view model's KV tokens grow ~6× (§6.6), so its quantized footprint will exceed the single-view "6 GB" figure.
+
 ---
 
 ## 7. Open decisions

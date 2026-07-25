@@ -106,6 +106,9 @@ Ordered by how hard they block progress. "Next phase" here means finishing Phase
 
 1. On a GPU machine: implement §3.2's `preprocess_views` / `decode_latent` scaling / `run(IntakeReport)` — closes Phase 0.
 2. Baseline run: stock weights, front view only, through the metric frame — the plan's Phase 0 control.
+   A second, cheaper baseline is available on 6–16 GB hardware via trellis.cpp + GGUF (§6.7 of the
+   plan, the decided deployment path): generate the GLB there, apply `unit_cube_scale` here, and let
+   the eval harness quantify what quantization costs in dimensional accuracy.
 3. Smoke-test `semantic.py` against LM Studio; add reply-schema validation — opens Phase 2.
 4. Rebuild or recover `ui/intake_bench.html`; wire the Gradio bench (§3.3) — Phase 1 UI.
 5. `trellis2/refine/silhouette_fit.py` stage (a) only — the 3-parameter anisotropic scale fit is
