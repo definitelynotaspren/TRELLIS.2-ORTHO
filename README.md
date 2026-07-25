@@ -1,5 +1,12 @@
 ![](assets/teaser.webp)
 
+> **This is TRELLIS.2-Ortho**, a fork of `microsoft/TRELLIS.2` adding multi-view, to-scale, hand-drawn
+> orthographic input. See [`DEVELOPMENTPLAN.md`](DEVELOPMENTPLAN.md) for the design and roadmap and
+> [`FORK.md`](FORK.md) for fork mechanics (pinned upstream commit, status by phase). The new
+> `trellis2/intake/` package (slot assignment, metric-frame reconciliation, and three validation
+> engines) and `eval/` (dimension-error / Chamfer / IoU / invention-ratio metrics) are CPU-only and
+> require no GPU or model weights to use -- see their module docstrings and `tests/`.
+
 # Native and Compact Structured Latents for 3D Generation
 
 <a href="https://arxiv.org/abs/2512.14692"><img src="https://img.shields.io/badge/Paper-Arxiv-b31b1b.svg" alt="Paper"></a>
