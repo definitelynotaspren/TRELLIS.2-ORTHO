@@ -62,5 +62,6 @@ def test_aggregate_report_rolls_up_scalars():
     per_item = [{'max_pct': 2.0}, {'max_pct': 4.0}, {'max_pct': 6.0}]
     agg = aggregate_report(per_item)
     assert agg['max_pct']['mean'] == pytest.approx(4.0)
-    assert agg['max_pct']['worst'] == pytest.approx(6.0)
+    assert agg['max_pct']['max'] == pytest.approx(6.0)
+    assert agg['max_pct']['min'] == pytest.approx(2.0)
     assert agg['max_pct']['n'] == 3

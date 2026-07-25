@@ -199,6 +199,65 @@ def test_carve_visual_hull_confidence_needs_two_axis_families():
     assert hull_full['confidence_volume_frac']['high'] > 0.0
 
 
+@pytest.mark.parametrize('shape_fn', [
+    lambda x, y, z: (z < 15.0) or (x < 30.0),   # L in the XZ plane (asymmetric front/back view)
+    lambda x, y, z: (z < 15.0) or (y < 20.0),   # L in the YZ plane (asymmetric left/right view)
+    lambda x, y, z: (x < 30.0) or (y < 20.0),   # L in the XY plane (asymmetric top/bottom view)
+])
+def test_carve_visual_hull_asymmetric_round_trip(shape_fn):
+    """
+    Orientation-convention integration test. Symmetric boxes can't catch a
+    mirrored face camera; an L-prism can. Build a ground-truth voxel L, render
+    its six silhouettes directly from FACE_R (the convention the carver
+    assumes), run the full DrawingSet -> reconcile -> carve path, and require
+    the carved hull to reproduce the ground truth voxel-exactly. Any flip or
+    mirror anywhere in normalize_views / _world_to_canvas_px / FACE_R breaks
+    the asymmetry and collapses the IoU.
+    """
+    res, px_per_mm, margin = 48, 4, 30
+    ext = np.array([100.0, 60.0, 40.0])
+    L = ext.max()
+
+    centers = (np.arange(res) + 0.5) / res - 0.5
+    gx, gy, gz = np.meshgrid(centers, centers, centers, indexing='ij')
+    pts_norm = np.stack([gx, gy, gz], axis=-1).reshape(-1, 3)
+    pts_mm = pts_norm * L + ext / 2
+    inside = np.all((pts_mm >= 0) & (pts_mm <= ext), axis=1)
+    occ = np.array([shape_fn(*p) for p in pts_mm]) & inside
+    gt = occ.reshape(res, res, res)
+
+    ds = DrawingSet(units='mm')
+    pts_centered = pts_mm - ext / 2
+    for face in FACES:
+        cam = pts_centered[occ] @ FACE_R[face].T
+        u, v = cam[:, 0], cam[:, 1]
+        w_px = int(np.ceil((u.max() - u.min()) * px_per_mm)) + 2
+        h_px = int(np.ceil((v.max() - v.min()) * px_per_mm)) + 2
+        img = np.full((h_px + 2 * margin, w_px + 2 * margin), 255, dtype=np.uint8)
+        col = ((u - u.min()) * px_per_mm).astype(int) + margin
+        row = ((v.max() - v) * px_per_mm).astype(int) + margin
+        r_half = max(1, int(px_per_mm * L / res / 2) + 1)
+        for c, r in zip(col, row):
+            img[max(0, r - r_half):r + r_half, max(0, c - r_half):c + r_half] = 0
+        ds.assign(Sheet(id=face, image=Image.fromarray(img).convert('RGB'),
+                        units_per_px=1.0 / px_per_mm), face)
+
+    frame = reconcile_extents(ds)
+    hull = carve_visual_hull(ds, frame, resolution=res, canvas_size=192)
+    carved = hull['hull_mask']
+    union = np.logical_or(gt, carved).sum()
+    iou = np.logical_and(gt, carved).sum() / union
+    assert iou > 0.98
+    # the hull must never exclude real geometry
+    assert np.logical_and(gt, ~carved).sum() == 0
+
+    # correctly drawn opposite views of an asymmetric object must still
+    # mirror-match, and must not trip the convention-mismatch flag
+    for pair, info in detect_projection_convention(ds).items():
+        assert info['mirror_iou'] > 0.95, pair
+        assert not info['likely_convention_mismatch'], pair
+
+
 def test_invention_ratio_basic():
     hull = np.zeros((4, 4, 4), dtype=bool)
     hull[:2, :2, :2] = True

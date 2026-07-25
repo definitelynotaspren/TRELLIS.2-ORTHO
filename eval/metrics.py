@@ -92,10 +92,14 @@ def aggregate_report(per_item: List[dict]) -> dict:
         vals = [d[k] for d in per_item if isinstance(d.get(k), (int, float)) and d.get(k) is not None]
         if not vals:
             continue
+        # 'worst' depends on the metric's direction (max for errors, min for
+        # IoU-like scores), which this generic rollup can't know -- report both
+        # ends and let the caller pick.
         out[k] = {
             'mean': float(np.mean(vals)),
             'median': float(np.median(vals)),
-            'worst': float(np.max(vals)),
+            'min': float(np.min(vals)),
+            'max': float(np.max(vals)),
             'n': len(vals),
         }
     return out

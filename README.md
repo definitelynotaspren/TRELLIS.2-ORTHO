@@ -6,6 +6,9 @@
 > `trellis2/intake/` package (slot assignment, metric-frame reconciliation, and three validation
 > engines) and `eval/` (dimension-error / Chamfer / IoU / invention-ratio metrics) are CPU-only and
 > require no GPU or model weights to use -- see their module docstrings and `tests/`.
+> **New to all of this?** [`GETTING_STARTED.md`](GETTING_STARTED.md) walks a non-programmer through
+> setup and a first drawing check. [`PHASE0_REVIEW.md`](PHASE0_REVIEW.md) records what's verified
+> working and what must be corrected before the next phase.
 
 # Native and Compact Structured Latents for 3D Generation
 
